@@ -1,0 +1,18 @@
+{
+  "appId": "com.pocketledger.app",
+  "appName": "Pocket Ledger",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#0a0e13",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#0a0e13",
+      "overlaysWebView": false
+    }
+  }
+}

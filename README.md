@@ -37,6 +37,7 @@
 - **10 currencies** — defaults to ₱ PHP; switch to $, €, £, ¥, ₹ and more in Settings.
 - **Backups you own** — export JSON (restorable) or CSV (opens in Excel/Sheets), import JSON to move devices.
 - **Installable PWA** — add it to your home screen on a phone and it works with no connection.
+- **Android home-screen widget** — this month's balance plus a one-tap quick-add button (APK only).
 
 ## Quick start
 
@@ -48,6 +49,36 @@
 | **Local server** | `npx serve .` or `python3 -m http.server 8080`, then open `http://localhost:8080` |
 
 > **Note:** opening `index.html` straight from disk works fully. The only features that need HTTPS are the "install app" prompt and offline caching — both switch on automatically once it is on GitHub Pages or any HTTPS host.
+
+## Get it as an Android app
+
+There is a real, installable **APK** — same app, wrapped in a native shell. No
+Play Store, no account, no build tools needed to use it.
+
+1. Copy `Pocket-Ledger-v1.0.apk` to your phone.
+2. Tap it and allow "install from unknown sources" when Android asks.
+3. Open **Pocket Ledger** from your app drawer.
+
+Works on **Android 5.1+**, ~3.8 MB installed, and runs fully offline because the
+assets ship inside the APK.
+
+What the native shell adds on top of the web version:
+
+- Launcher icon (adaptive + round, all densities) and a branded splash screen
+- **Hardware back button** — closes the entry sheet, then the dialog, then backs out to Overview before exiting
+- Status bar recolours to match dark/light theme
+- **Backup export opens the Android share sheet** (Drive, Gmail, Files) instead of a silent download that WebViews ignore
+- No browser chrome, no URL bar — it just looks like an app
+- **Home-screen widget** — shows this month's balance and has a **+** button that opens the entry sheet directly (long-press your home screen → Widgets → Pocket Ledger)
+
+The rebuildable Capacitor project plus full instructions live in
+`pocket-ledger-android-project.zip` (`README-ANDROID.md` inside).
+
+### Prefer no APK?
+
+The same app installs from the browser once it is on HTTPS (GitHub Pages):
+Chrome menu → **Install app**. You get the icon and offline mode; you just miss
+the hardware back-button handling and the native share sheet.
 
 ## Your data
 
@@ -75,6 +106,13 @@ budget-tracker/
 └── LICENSE
 ```
 
+Shipped alongside this folder:
+
+```
+Pocket-Ledger-v1.0.apk             # ready-to-install Android app
+pocket-ledger-android-project.zip  # Capacitor source to rebuild the APK
+```
+
 No build step, no `node_modules`, no framework, no bundler. Edit `index.html`, refresh, done.
 
 ## Making it yours
@@ -90,6 +128,8 @@ var EXPENSE_CATS = [{ id: 'food', name: 'Food', long: 'Food & Groceries', icon: 
 ```
 
 Theme colours are CSS variables at the top of the `<style>` block — change `--accent` and the entire app follows. Category glyphs are inline SVGs, so nothing depends on an emoji font being installed.
+
+Two small shims let the exact same file run inside the Android APK: `isNative()` checks for Capacitor, and `saveFile()` routes exports to the native share sheet when it is available (falling back to a normal browser download otherwise). On the web both are inert.
 
 ## Keyboard shortcuts
 

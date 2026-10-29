@@ -7,6 +7,9 @@
 <meta name="description" content="A tiny, offline-first budget tracker. Track income, expenses and monthly budgets. No accounts, no servers — your data stays on your device.">
 <meta name="theme-color" content="#0a0e13">
 <meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pocket Ledger">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -74,6 +77,7 @@ html,body{margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  touch-action:manipulation;
   background:var(--bg);
   background-image:var(--glow);
   background-attachment:fixed;
@@ -244,7 +248,7 @@ main{padding-bottom:132px}
   background:var(--card);border:1px solid var(--border);border-radius:12px;
 }
 .search svg{width:15px;height:15px;color:var(--muted);flex:none}
-.search input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:13.5px;height:100%}
+.search input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:16px;height:100%}
 .search input::placeholder{color:var(--muted)}
 
 .tx-group{margin-bottom:6px}
@@ -283,7 +287,7 @@ main{padding-bottom:132px}
 .budget-name .b-ico svg{width:16px;height:16px}
 .budget-amt{
   width:106px;text-align:right;background:var(--card-2);border:1px solid var(--border);color:var(--text);
-  border-radius:10px;padding:7px 10px;font-size:13px;font-variant-numeric:tabular-nums;outline:none;
+  border-radius:10px;padding:7px 10px;font-size:16px;font-variant-numeric:tabular-nums;outline:none;
 }
 .budget-amt:focus{border-color:var(--accent)}
 .budget-amt::placeholder{color:var(--muted)}
@@ -298,7 +302,7 @@ main{padding-bottom:132px}
 .set-desc{font-size:11.5px;color:var(--muted);margin-top:2px}
 .select{
   background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;
-  font-size:13px;outline:none;cursor:pointer;max-width:210px;
+  font-size:16px;outline:none;cursor:pointer;max-width:210px;
 }
 .select option{background:var(--card);color:var(--text)}
 .select:focus{border-color:var(--accent)}
@@ -409,7 +413,7 @@ main{padding-bottom:132px}
 .amount-input input[type=number]{-moz-appearance:textfield;appearance:textfield}
 input[type="date"],input[type="text"],.text-input{
   width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:12px;
-  padding:11px 13px;font-size:14px;outline:none;min-height:44px;
+  padding:11px 13px;font-size:16px;outline:none;min-height:44px;
 }
 input[type="date"]:focus,input[type="text"]:focus{border-color:var(--accent)}
 input[type="date"]{display:block;color:var(--text)}
@@ -644,7 +648,7 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>
           Import JSON
         </button>
-        <input type="file" id="importFile" accept="application/json,.json" class="sr" aria-label="Choose a JSON backup file">
+        <input type="file" id="importFile" accept="application/json,text/plain,.json" class="sr" aria-label="Choose a JSON backup file">
       </div>
       <div class="set-row">
         <div class="set-text">
@@ -1077,9 +1081,41 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
   /* ============================================================
      Theme
      ============================================================ */
+  function isNative() {
+    try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    catch (e) { return false; }
+  }
+  function plugin(name) {
+    try { return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null; }
+    catch (e) { return null; }
+  }
+  function nativeBridge() {
+    try { return window.PocketLedgerNative || null; } catch (e) { return null; }
+  }
+
+  // Push this month's balance to the Android home-screen widget.
+  function updateWidgetSummary() {
+    var b = nativeBridge();
+    if (!b || !b.updateWidget) return;
+    try {
+      var t = totals(txsForMonth(currentMonthKey()));
+      b.updateWidget(currency().code, String(t.balance), currentMonthKey());
+    } catch (e) {}
+  }
+
+  function syncStatusBar() {
+    var SB = plugin('StatusBar');
+    if (!SB) return;
+    var dark = state.settings.theme !== 'light';
+    // Canvas.Invert: light text on a dark app, dark text on a light app
+    try { SB.setStyle({ style: dark ? 'LIGHT' : 'DARK' }).catch(function () {}); } catch (e) {}
+    try { SB.setBackgroundColor({ color: dark ? '#0a0e13' : '#f4f6fa' }).catch(function () {}); } catch (e) {}
+  }
+
   function applyTheme() {
     var theme = state.settings.theme === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', theme);
+    syncStatusBar();
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'light' ? '#f4f6fa' : '#0a0e13');
     var sw = $('#themeSwitch');
@@ -1434,6 +1470,7 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
     $('#brandSub').textContent = state.transactions.length
       ? state.transactions.length + ' entries · all local'
       : 'Your money, on your device';
+    updateWidgetSummary();
   }
 
   /* ============================================================
@@ -1605,7 +1642,9 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
   /* ============================================================
      Import / export
      ============================================================ */
-  function download(filename, content, mime) {
+  // Browser download (works everywhere except Android WebView, where blob:
+  // links are silently ignored).
+  function browserDownload(filename, content, mime) {
     try {
       var blob = new Blob([content], { type: mime || 'application/octet-stream' });
       var url = URL.createObjectURL(blob);
@@ -1620,11 +1659,31 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
     } catch (e) { return false; }
   }
 
+  // Save a text file. On Android the file is written to the app cache and
+  // handed to the system share sheet, so it can go to Drive, Gmail, Files, etc.
+  function saveFile(filename, content, mime) {
+    var FS = plugin('Filesystem');
+    if (isNative() && FS && FS.writeFile) {
+      return FS.writeFile({ path: filename, data: content, directory: 'CACHE', encoding: 'utf8' })
+        .then(function (res) {
+          var Share = plugin('Share');
+          if (Share && Share.share) {
+            return Share.share({ title: filename, url: res.uri, dialogTitle: 'Save or send backup' });
+          }
+          return true;
+        })
+        .then(function () { return true; })
+        .catch(function () { return browserDownload(filename, content, mime); });
+    }
+    return Promise.resolve(browserDownload(filename, content, mime));
+  }
+
   function exportJSON() {
     var payload = JSON.stringify(state, null, 2);
     var name = 'pocket-ledger-backup-' + todayISO() + '.json';
-    if (download(name, payload, 'application/json')) toast('Backup downloaded');
-    else toast('Download blocked here — open the app directly');
+    saveFile(name, payload, 'application/json').then(function (ok) {
+      toast(ok ? (isNative() ? 'Backup ready to share' : 'Backup downloaded') : 'Export failed — try the web version');
+    });
   }
 
   function exportCSV() {
@@ -1645,8 +1704,9 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
       }).join(',');
     }).join('\r\n');
     var name = 'pocket-ledger-' + todayISO() + '.csv';
-    if (download(name, '\uFEFF' + csv, 'text/csv;charset=utf-8')) toast('CSV downloaded');
-    else toast('Download blocked here — open the app directly');
+    saveFile(name, '\uFEFF' + csv, 'text/csv;charset=utf-8').then(function (ok) {
+      toast(ok ? (isNative() ? 'CSV ready to share' : 'CSV downloaded') : 'Export failed — try the web version');
+    });
   }
 
   function importJSON(file) {
@@ -1892,6 +1952,7 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
      Service worker
      ============================================================ */
   function registerSW() {
+    if (isNative()) return;              // the APK ships its own local assets
     if (!('serviceWorker' in navigator)) return;
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
     window.addEventListener('load', function () {
@@ -1902,16 +1963,54 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;backg
   /* ============================================================
      Boot
      ============================================================ */
+  function initNativeShell() {
+    if (!isNative()) return;
+    document.documentElement.classList.add('is-native');
+    syncStatusBar();
+
+    var AppPlugin = plugin('App');
+    if (!AppPlugin) return;
+
+    AppPlugin.addListener('backButton', function () {
+      // Mirror normal Android behaviour: close the topmost layer first.
+      var confirmEl = $('#confirmBackdrop');
+      var sheetEl = $('#sheetBackdrop');
+      if (confirmEl && !confirmEl.hidden) { closeConfirm(false); return; }
+      if (sheetEl && !sheetEl.hidden) { closeSheet(); return; }
+      if (ui.view !== 'overview') { setView('overview'); return; }
+      try { AppPlugin.exitApp(); } catch (e) {}
+    });
+
+    // Keep the ledger fresh if Android kills and restores the WebView.
+    AppPlugin.addListener('appStateChange', function (st) {
+      if (st && st.isActive) {
+        applyTheme();
+        renderAll();
+      }
+    });
+  }
+
   applyTheme();
   bind();
   renderAll();
   registerSW();
+  initNativeShell();
 
   // expose a small hook for debugging in the console
   window.pocketLedger = {
     version: APP_VERSION,
-    getState: function () { return JSON.parse(JSON.stringify(state)); }
+    getState: function () { return JSON.parse(JSON.stringify(state)); },
+    // Invoked by MainActivity when the user taps the widget's + button.
+    quickAddFromWidget: function () {
+      if (!$('#sheetBackdrop').hidden) return;
+      if (ui.view === 'settings') setView('overview');
+      openSheet(null);
+    },
+    // Lets the native shell push a freshly computed summary at any time.
+    refreshWidget: function () { updateWidgetSummary(); }
   };
+
+  updateWidgetSummary();
 })();
 </script>
 </body>

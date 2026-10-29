@@ -1,0 +1,46 @@
+PUSHING POCKET LEDGER TO GITHUB
+===============================
+
+The .git history is NOT included in the zip (it is rebuilt below).
+Run these from inside the unzipped "budget-tracker" folder.
+
+1. Create an empty repo on GitHub — do NOT add a README, .gitignore or license
+   (this project already has them).
+   https://github.com/new
+
+2. Point this folder at it and push:
+
+   git init
+   git add -A
+   git commit -m "Pocket Ledger v1.0.0 - offline-first budget tracker"
+   git branch -M main
+   git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO.git
+   git push -u origin main
+
+3. Turn on the live site (optional):
+
+   GitHub repo -> Settings -> Pages -> Source: "GitHub Actions"
+
+   The included .github/workflows/pages.yml deploys on every push to main.
+   Your app will be live at:
+   https://YOUR-USERNAME.github.io/YOUR-REPO/
+
+   On that HTTPS URL the service worker registers, so it works offline and
+   can be installed to a phone home screen.
+
+
+USING IT WITHOUT GITHUB
+=======================
+
+Just open index.html in any browser. No install, no server, no build step.
+Data is saved in that browser's localStorage - use Settings -> Export JSON
+to back it up.
+
+
+A NOTE ON LOCALSTORAGE
+======================
+
+Opening index.html by double-clicking works and saves normally.
+If your browser blocks storage (some sandboxed previews do), the app shows a
+"Preview mode" banner in Settings and keeps data in memory only - open the
+file directly or serve it over http://localhost to get real saving.
